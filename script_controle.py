@@ -1,13 +1,11 @@
 import tkinter as tk
-from tkinter import filedialog, messagebox
+from tkinter import filedialog, messagebox, scrolledtext
 import pandas as pd
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
-from reportlab.lib import colors
 
 def verifier_dossier(fichier):
-    rapport = []
-
+    rapport = ["RAPPORT DE CONTRÔLE\n \n"]
     try:
         if fichier.endswith('.csv'):
             df = pd.read_csv(fichier)
@@ -73,45 +71,48 @@ def verifier_dossier(fichier):
 
     return "\n".join(rapport)
 
-def ouvrir_fichier():
-    fichier = filedialog.askopenfilename(filetypes=[("Fichiers CSV et Excel", "*.csv;*.xls;*.xlsx")])
-    if fichier:
-        try:
-            rapport = verifier_dossier(fichier)
-            sauvegarder_rapport_pdf(rapport)
-        except Exception as e:
-            messagebox.showerror("Erreur", str(e))
+def afficher_previsualisation(rapport):
+    fenetre = tk.Toplevel()
+    fenetre.title("Prévisualisation du Rapport")
+    fenetre.geometry("800x600")
+
+    text_area = scrolledtext.ScrolledText(fenetre, wrap=tk.WORD, width=90, height=30)
+    text_area.insert(tk.INSERT, rapport)
+    text_area.config(state=tk.DISABLED)
+    text_area.pack(padx=10, pady=10)
+
+    btn_sauvegarder = tk.Button(fenetre, text="Enregistrer en PDF", command=lambda: sauvegarder_rapport_pdf(rapport))
+    btn_sauvegarder.pack(pady=10)
 
 def sauvegarder_rapport_pdf(rapport):
     dossier_sortie = filedialog.askdirectory()
     if dossier_sortie:
         save_path = f"{dossier_sortie}/rapport_controle.pdf"
-
         c = canvas.Canvas(save_path, pagesize=letter)
-        c.setFont("Helvetica-Bold", 16)
-
-        width, height = letter
-        title = "Rapport de contrôle"
-        title_width = c.stringWidth(title, "Helvetica-Bold", 16)
-        c.drawString((width - title_width) / 2, height - 40, title)
-
+        c.setFont("Helvetica-Bold", 14)
+        c.drawCentredString(300, 780, "RAPPORT DE CONTRÔLE")
         c.setFont("Helvetica", 10)
-
-        y_position = height - 60  
+        y_position = 750
 
         for line in rapport.split("\n"):
             c.drawString(40, y_position, line)
-            y_position -= 12  
-            if y_position < 40:  
+            y_position -= 12
+            if y_position < 40:
                 c.showPage()
                 c.setFont("Helvetica", 10)
-                y_position = height - 40
-                c.setFont("Helvetica-Bold", 16)
-                c.drawString((width - title_width) / 2, height - 40, title)
-                c.setFont("Helvetica", 10)
+                y_position = 750
 
         c.save()
-        messagebox.showinfo("Succès", f"Le rapport a été généré et sauvegardé dans : {save_path}")
+        messagebox.showinfo("Succès", f"Le rapport a été sauvegardé dans : {save_path}")
+
+def ouvrir_fichier():
+    fichier = filedialog.askopenfilename(filetypes=[("Fichiers CSV et Excel", "*.csv;*.xls;*.xlsx")])
+    if fichier:
+        try:
+            rapport = verifier_dossier(fichier)
+            afficher_previsualisation(rapport)
+        except Exception as e:
+            messagebox.showerror("Erreur", str(e))
 
 def main():
     root = tk.Tk()
